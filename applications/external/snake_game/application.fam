@@ -1,6 +1,6 @@
 App(
     appid="Snake",
-    name="Snake Game",
+    name="Snake",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="snake_game_app",
     requires=["gui"],

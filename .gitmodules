@@ -34,3 +34,9 @@
 [submodule "lib/heatshrink"]
 	path = lib/heatshrink
 	url = https://github.com/flipperdevices/heatshrink.git
+[submodule "applications/external/dice"]
+	path = applications/external/dice
+	url = https://github.com/Ka3u6y6a/flipper-zero-dice
+[submodule "applications/external/hex_editor"]
+	path = applications/external/hex_editor
+	url = https://github.com/dunaevai135/flipper-zero-hex_editor
