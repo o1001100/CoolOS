@@ -40,3 +40,9 @@
 [submodule "applications/external/hex_editor"]
 	path = applications/external/hex_editor
 	url = https://github.com/dunaevai135/flipper-zero-hex_editor
+[submodule "applications/external/subbrute"]
+	path = applications/external/subbrute
+	url = https://github.com/derskythe/flipperzero-subbrute
+[submodule "applications/external/schip"]
+	path = applications/external/schip
+	url = https://github.com/Milk-Cool/fz-schip

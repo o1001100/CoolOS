@@ -1,6 +1,6 @@
 App(
     appid="cli_gui",
-    name="CLI",
+    name="Terminal",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="cligui_main",
     requires=["gui", "cli"],

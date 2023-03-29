@@ -152,7 +152,7 @@ static DialogMessageButton fw_version_screen(DialogsApp* dialogs, DialogMessage*
     dialog_message_set_header(message, "Firmware Info:", 0, 0, AlignLeft, AlignTop);
     dialog_message_set_text(
         message,
-        "XFW - Xtreme Firmware\nGithub.com/ClaraCrazy/Flipper-Xtreme",
+        "CoolOS - github.com/o1001100/coolos",
         0,
         13,
         AlignLeft,
