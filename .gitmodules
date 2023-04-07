@@ -46,3 +46,6 @@
 [submodule "applications/external/schip"]
 	path = applications/external/schip
 	url = https://github.com/Milk-Cool/fz-schip
+[submodule "applications/external/uart_terminal"]
+	path = applications/external/uart_terminal
+	url = https://github.com/cool4uma/UART_Terminal
