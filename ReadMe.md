@@ -6,13 +6,39 @@ This is my personal firmware and you probably don't want to use it :)
 
 ## Installation
 
-Build like any other firmware or use my build script:
+### Install using qFlipper or mobile app
 
-`./compile`
+Download the qFlipper package (.tgz) from the latest release page
 
-and then install like any other firmware from the `dist/f7-C` directory
+Open qFlipper or the mobile app and connect your Flipper
 
-The script is written in bash and will **remove all files** in `applications_user` and `assets/resources/apps` as well as running `./fbt -c` before compiling apps and finally the update package
+Click Install from file
+
+Select the .tgz you downloaded and wait for the update to complete
+
+### Install from updater package
+
+Download the zipped archive (.zip) from the latest release page
+
+Extract the archive. This is now your new Firmware folder
+
+Move the firmware folder to the update folder on the Flipper's SD with qFlipper or by mounting the SD to your computer/phone
+
+On the Flipper, hit the Arrow Down button, this will get you to the file menu. In there simply search for your updates folder
+
+Inside that folder, select the Firmware you just moved onto it, and run the file thats simply called Update
+
+## Building
+
+Build like any other firmware or use my build script `compile`
+
+run `./compile` to build a full updater package with apps included
+
+run `./compile -h` for help with more options
+
+## Changelog
+
+*Todo*
 
 ## Credits
 
