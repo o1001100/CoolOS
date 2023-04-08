@@ -4,6 +4,8 @@ Forked from [Flipper-Xtreme](https://github.com/ClaraCrazy/Flipper-Xtreme) with 
 
 This is my personal firmware and you probably don't want to use it :)
 
+Resources I use are availiable [here](https://github.com/o1001100/cool-resources)
+
 ## Installation
 
 ### Install using qFlipper or mobile app
@@ -36,10 +38,6 @@ run `./compile` to build a full updater package with apps included
 
 run `./compile -h` for help with more options
 
-## Changelog
-
-*Todo*
-
 ## Credits
 
 #### Firmware
@@ -61,10 +59,10 @@ Included apps are the same as in Xtreme [(list of apps and authors)](https://git
 
 [fz-schip](https://github.com/Milk-Cool/fz-schip) by Milk-Cool
 
-#### Resources
+[ir_scope](https://github.com/kallanreed/unleashed-firmware/tree/dev/applications/external/ir_scope) by kallanreed
 
-Resources in this fork are taken from:
+[flipperscope](https://github.com/anfractuosity/flipperscope) by anfractuosity
 
-[Flipper](https://github.com/UberGuidoZ/Flipper) by UberGuidoz (large dump of files for Flipper)
+[flipperzero-text2sam](https://github.com/Round-Pi/flipperzero-text2sam) by Round-Pi
 
-[Flipper-IRDB](https://github.com/Lucaslhm/Flipper-IRDB) by Lucaslhm [and many more](https://github.com/Lucaslhm/Flipper-IRDB#flipper-irdb) (massive database of IR files formatted for Flipper)
+[dice](https://github.com/RogueMaster/flipperzero-firmware-wPlugins/tree/420/applications/external/dice) by RogueMaster
