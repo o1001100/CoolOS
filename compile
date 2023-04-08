@@ -51,13 +51,10 @@ EOF
 }
 
 case "$1" in
-  -c | --clean) clean && exit;;
-  -a | --apps) apps && exit;;
-  -f | --firmware) firmware && exit;;
-  -h | --help) help && exit;;
+  -c | --clean) clean; exit;;
+  -a | --apps) apps; exit;;
+  -f | --firmware) firmware; exit;;
+  -h | --help) help; exit;;
 esac
 
-clean
-apps
-firmware
-exit
+clean; apps; firmware; exit
