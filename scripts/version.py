@@ -1,5 +1,5 @@
 #!/usb/bin/env python3
-VERSION = "CoolOS_V3.0"
+VERSION = "CoolOS_V3.1"
 
 from flipper.app import App
 

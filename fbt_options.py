@@ -14,7 +14,7 @@ DEBUG = 0
 
 # Suffix to add to files when building distribution
 # If OS environment has DIST_SUFFIX set, it will be used instead
-DIST_SUFFIX = "CoolOS_V3.0"
+DIST_SUFFIX = "CoolOS_V3.1"
 
 # Coprocessor firmware
 COPRO_OB_DATA = "scripts/ob.data"
