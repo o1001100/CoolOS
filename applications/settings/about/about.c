@@ -16,8 +16,8 @@ static DialogMessageButton product_screen(DialogsApp* dialogs, DialogMessage* me
     DialogMessageButton result;
 
     FuriString* screen_header = furi_string_alloc_printf(
-        "Product: %s\n"
-        "Model: %s",
+        "Pwoduct: %s\n"
+        "Modew: %s",
         furi_hal_version_get_model_name(),
         furi_hal_version_get_model_code());
 

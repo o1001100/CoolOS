@@ -1,5 +1,5 @@
 #!/usb/bin/env python3
-VERSION = "XFW-0045"
+VERSION = "CoolOS-v4.0"
 
 import json
 import os
