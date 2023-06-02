@@ -1,6 +1,6 @@
 App(
     appid="NRF24_Mouse_Jacker",
-    name="[NRF24] Mouse Jacker",
+    name="Mouse Jacker (dep)",
     apptype=FlipperAppType.EXTERNAL,
     entry_point="mousejacker_app",
     requires=[

@@ -1,5 +1,5 @@
 #!/usb/bin/env python3
-VERSION = "XFW-0047"
+VERSION = "5.0"
 
 import json
 import os

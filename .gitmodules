@@ -40,3 +40,12 @@
 [submodule "lib/stm32wb_copro"]
 	path = lib/stm32wb_copro
 	url = https://github.com/flipperdevices/stm32wb_copro.git
+[submodule "applications/external/flipperscope"]
+	path = applications/external/flipperscope
+	url = https://github.com/anfractuosity/flipperscope
+[submodule "applications/external/hex_editor"]
+	path = applications/external/hex_editor
+	url = https://github.com/dunaevai135/flipper-zero-hex_editor
+[submodule "applications/external/em4100-fuzzer"]
+	path = applications/external/em4100-fuzzer
+	url = https://github.com/Milk-Cool/fz-em4100-generator/

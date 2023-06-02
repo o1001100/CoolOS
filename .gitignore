@@ -83,3 +83,10 @@ assets/dolphin/custom/*
 !assets/dolphin/custom/WatchDogs/
 !assets/dolphin/custom/ReadMe.md
 assets/resources/dolphin_custom/
+
+
+# CoolOS specific:
+
+# shite
+applications_user/*
+release/*
