@@ -1,6 +1,6 @@
 App(
     appid="xtreme_app",
-    name="Poggers",
+    name="Xtreme",
     apptype=FlipperAppType.FAPP,
     entry_point="xtreme_app",
     cdefines=["APP_XTREME"],

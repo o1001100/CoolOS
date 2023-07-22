@@ -46,6 +46,3 @@
 [submodule "applications/external/hex_editor"]
 	path = applications/external/hex_editor
 	url = https://github.com/dunaevai135/flipper-zero-hex_editor
-[submodule "applications/external/em4100-fuzzer"]
-	path = applications/external/em4100-fuzzer
-	url = https://github.com/Milk-Cool/fz-em4100-generator/
