@@ -1,7 +1,10 @@
+from pathlib import Path
 import posixpath
+import datetime
 
 # For more details on these options, run 'fbt -h'
 
+FIRMWARE_ORIGIN = "Xtreme"
 
 # Default hardware target
 TARGET_HW = 7
@@ -14,13 +17,15 @@ DEBUG = 0
 
 # Suffix to add to files when building distribution
 # If OS environment has DIST_SUFFIX set, it will be used instead
-DIST_SUFFIX = "CoolOS-v5.0"
+
+# How about we add the timestamp automatically. Solves some problems
+DIST_SUFFIX = f"XFW-0049_{datetime.datetime.today().strftime('%d%m%Y')}"
 
 # Coprocessor firmware
 COPRO_OB_DATA = "scripts/ob.data"
 
 # Must match lib/stm32wb_copro version
-COPRO_CUBE_VERSION = "1.13.3"
+COPRO_CUBE_VERSION = "1.15.0"
 
 COPRO_CUBE_DIR = "lib/stm32wb_copro"
 
@@ -91,3 +96,8 @@ FIRMWARE_APPS = {
 }
 
 FIRMWARE_APP_SET = "default"
+
+custom_options_fn = "fbt_options_local.py"
+
+if Path(custom_options_fn).exists():
+    exec(compile(Path(custom_options_fn).read_text(), custom_options_fn, "exec"))

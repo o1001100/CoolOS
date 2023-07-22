@@ -48,6 +48,7 @@ typedef struct {
 typedef struct {
     bool gauge_is_ok;
     bool is_charging;
+    bool is_charge_capped;
 
     float current_charger;
     float current_gauge;
@@ -118,6 +119,13 @@ void power_enable_low_battery_level_notification(Power* power, bool enable);
  * @param power     Power instance
  */
 void power_trigger_ui_update(Power* power);
+
+/** Enable or disable battery icon
+ *
+ * @param power         Power instance
+ * @param is_enabled    Show battery or not
+ */
+void power_set_battery_icon_enabled(Power* power, bool is_enabled);
 
 #ifdef __cplusplus
 }

@@ -7,8 +7,7 @@
 #include <toolbox/dir_walk.h>
 #include "toolbox/path.h"
 
-#define MAX_NAME_LENGTH 256
-#define MAX_EXT_LEN 16
+#define MAX_NAME_LENGTH 254
 #define FILE_BUFFER_SIZE 512
 
 #define TAG "StorageAPI"
@@ -446,7 +445,18 @@ FS_Error storage_common_rename(Storage* storage, const char* old_path, const cha
 
     S_API_MESSAGE(StorageCommandCommonRename);
     S_API_EPILOGUE;
-    return S_RETURN_ERROR;
+    FS_Error ret = S_RETURN_ERROR;
+
+    if(ret == FSE_NOT_IMPLEMENTED) {
+        // Different filesystems, use copy + remove
+        ret = storage_common_copy(storage, old_path, new_path);
+        if(ret == FSE_OK) {
+            if(!storage_simply_remove_recursive(storage, old_path)) {
+                ret = FSE_INTERNAL;
+            }
+        }
+    }
+    return ret;
 }
 
 FS_Error storage_common_move(Storage* storage, const char* old_path, const char* new_path) {
@@ -458,7 +468,7 @@ FS_Error storage_common_move(Storage* storage, const char* old_path, const char*
         return FSE_INVALID_NAME;
     }
 
-    if(storage_common_exists(storage, new_path)) {
+    if(storage_file_exists(storage, new_path)) {
         FS_Error error = storage_common_remove(storage, new_path);
         if(error != FSE_OK) {
             return error;
@@ -475,7 +485,16 @@ FS_Error storage_common_move(Storage* storage, const char* old_path, const char*
 
     S_API_MESSAGE(StorageCommandCommonRename);
     S_API_EPILOGUE;
-    return S_RETURN_ERROR;
+    FS_Error ret = S_RETURN_ERROR;
+
+    if(ret == FSE_NOT_IMPLEMENTED) {
+        // Different filesystems, use copy + remove
+        ret = storage_common_copy(storage, old_path, new_path);
+        if(ret == FSE_OK) {
+            ret = storage_simply_remove_recursive(storage, old_path);
+        }
+    }
+    return ret;
 }
 
 static FS_Error
@@ -646,30 +665,31 @@ FS_Error storage_common_merge(Storage* storage, const char* old_path, const char
             error = storage_common_stat(storage, new_path, &fileinfo);
             if(error == FSE_OK) {
                 furi_string_set(new_path_next, new_path);
-                FuriString* dir_path;
-                FuriString* filename;
-                char extension[MAX_EXT_LEN] = {0};
-
-                dir_path = furi_string_alloc();
-                filename = furi_string_alloc();
+                FuriString* dir_path = furi_string_alloc();
+                FuriString* filename = furi_string_alloc();
+                FuriString* file_ext = furi_string_alloc();
 
                 path_extract_filename(new_path_next, filename, true);
                 path_extract_dirname(new_path, dir_path);
-                path_extract_extension(new_path_next, extension, MAX_EXT_LEN);
+                path_extract_ext_str(new_path_next, file_ext);
 
                 storage_get_next_filename(
                     storage,
                     furi_string_get_cstr(dir_path),
                     furi_string_get_cstr(filename),
-                    extension,
+                    furi_string_get_cstr(file_ext),
                     new_path_next,
                     255);
                 furi_string_cat_printf(
-                    dir_path, "/%s%s", furi_string_get_cstr(new_path_next), extension);
+                    dir_path,
+                    "/%s%s",
+                    furi_string_get_cstr(new_path_next),
+                    furi_string_get_cstr(file_ext));
                 furi_string_set(new_path_next, dir_path);
 
                 furi_string_free(dir_path);
                 furi_string_free(filename);
+                furi_string_free(file_ext);
                 new_path_tmp = furi_string_get_cstr(new_path_next);
             } else {
                 new_path_tmp = new_path;
@@ -873,7 +893,7 @@ bool storage_simply_remove_recursive(Storage* storage, const char* path) {
         return true;
     }
 
-    char* name = malloc(MAX_NAME_LENGTH + 1); //-V799
+    char* name = malloc(MAX_NAME_LENGTH); //-V799
     File* dir = storage_file_alloc(storage);
     cur_dir = furi_string_alloc_set(path);
     bool go_deeper = false;

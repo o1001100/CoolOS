@@ -3,7 +3,7 @@
 #include <gui/canvas_i.h>
 #include "defines.h"
 #include "common/ui.h"
-#include "Solitaire_icons.h"
+#include "solitaire_icons.h"
 #include <notification/notification.h>
 #include <notification/notification_messages.h>
 void init(GameState* game_state);
@@ -275,6 +275,7 @@ void tick(GameState* game_state, NotificationApp* notification) {
     if(game_state->state == GameStatePlay) {
         if(game_state->top_cards[0].character == 11 && game_state->top_cards[1].character == 11 &&
            game_state->top_cards[2].character == 11 && game_state->top_cards[3].character == 11) {
+            // dolphin_deed(DolphinDeedPluginGameWin);
             game_state->state = GameStateAnimate;
             return;
         }
@@ -488,6 +489,9 @@ int32_t solitaire_app(void* p) {
     gui_add_view_port(gui, view_port, GuiLayerFullscreen);
 
     AppEvent event;
+
+    // Call Dolphin deed on game start
+    // dolphin_deed(DolphinDeedPluginGameStart);
 
     for(bool processing = true; processing;) {
         FuriStatus event_status = furi_message_queue_get(event_queue, &event, 150);

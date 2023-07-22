@@ -5,6 +5,7 @@ enum VarItemListIndex {
     VarItemListIndexAnimSpeed,
     VarItemListIndexCycleAnims,
     VarItemListIndexUnlockAnims,
+    VarItemListIndexFallbackAnim,
 };
 
 void xtreme_app_scene_interface_graphics_var_item_list_callback(void* context, uint32_t index) {
@@ -23,12 +24,11 @@ static void xtreme_app_scene_interface_graphics_asset_pack_changed(VariableItem*
         XTREME_ASSETS_PACK_NAME_LEN);
     app->asset_pack_index = index;
     app->save_settings = true;
-    app->require_reboot = true;
 }
 
 const char* const anim_speed_names[] =
     {"25%", "50%", "75%", "100%", "125%", "150%", "175%", "200%", "225%", "250%", "275%", "300%"};
-const int32_t anim_speed_values[COUNT_OF(anim_speed_names)] =
+const uint32_t anim_speed_values[COUNT_OF(anim_speed_names)] =
     {25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300};
 static void xtreme_app_scene_interface_graphics_anim_speed_changed(VariableItem* item) {
     XtremeApp* app = variable_item_get_context(item);
@@ -104,8 +104,8 @@ void xtreme_app_scene_interface_graphics_on_enter(void* context) {
         COUNT_OF(anim_speed_names),
         xtreme_app_scene_interface_graphics_anim_speed_changed,
         app);
-    value_index = value_index_int32(
-        xtreme_settings->anim_speed, anim_speed_values, COUNT_OF(anim_speed_names));
+    value_index = value_index_uint32(
+        xtreme_settings->anim_speed, anim_speed_values, COUNT_OF(anim_speed_values));
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, anim_speed_names[value_index]);
 
@@ -116,7 +116,7 @@ void xtreme_app_scene_interface_graphics_on_enter(void* context) {
         xtreme_app_scene_interface_graphics_cycle_anims_changed,
         app);
     value_index = value_index_int32(
-        xtreme_settings->cycle_anims, cycle_anims_values, COUNT_OF(cycle_anims_names));
+        xtreme_settings->cycle_anims, cycle_anims_values, COUNT_OF(cycle_anims_values));
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, cycle_anims_names[value_index]);
 

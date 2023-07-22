@@ -2,6 +2,7 @@
 #include <notification/notification.h>
 #include <notification/notification_messages.h>
 #include <totp_icons.h>
+#include <assets_icons.h>
 #include <roll_value.h>
 #include "totp_scene_generate_token.h"
 #include "../../../types/token_info.h"
@@ -165,6 +166,15 @@ static void draw_totp_code(Canvas* const canvas, const PluginState* const plugin
     case 6:
         current_font = &karmaFuture_14ptFontInfo;
         break;
+    case 7:
+        current_font = &funclimbingDemo_18ptFontInfo;
+        break;
+    case 8:
+        current_font = &dPComic_18ptFontInfo;
+        break;
+    case 9:
+        current_font = &pixelFlag_18ptFontInfo;
+        break;
     default:
         current_font = &modeNine_15ptFontInfo;
         break;
@@ -221,6 +231,15 @@ static void on_new_token_code_generated(bool time_left, void* context) {
         break;
     case 6:
         current_font = &karmaFuture_14ptFontInfo;
+        break;
+    case 7:
+        current_font = &funclimbingDemo_18ptFontInfo;
+        break;
+    case 8:
+        current_font = &dPComic_18ptFontInfo;
+        break;
+    case 9:
+        current_font = &pixelFlag_18ptFontInfo;
         break;
     default:
         current_font = &modeNine_15ptFontInfo;

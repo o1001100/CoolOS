@@ -81,3 +81,7 @@ if __name__ == "__main__":
     if not req.ok:
         print(f"{req.url = }\n{req.status_code = }\n{req.content = }")
         sys.exit(1)
+
+    changelog = body.split("## 🚀 Changelog", 1)[1]
+    with open(os.environ["ARTIFACT_TGZ"].removesuffix(".tgz") + ".md", "w") as f:
+        f.write(changelog.strip() + "\n\n")

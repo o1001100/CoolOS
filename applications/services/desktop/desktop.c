@@ -37,17 +37,39 @@ static void desktop_loader_callback(const void* message, void* context) {
         view_dispatcher_send_custom_event(desktop->view_dispatcher, DesktopGlobalAfterAppFinished);
     }
 }
+
 static void desktop_lock_icon_draw_callback(Canvas* canvas, void* context) {
     UNUSED(context);
     furi_assert(canvas);
     canvas_draw_icon(canvas, 0, 0, &I_Lock_7x8);
 }
 
-static void desktop_toggle_clock_view(Desktop* desktop, bool is_enabled) {
+static void desktop_clock_upd_time(Desktop* desktop, bool forced) {
     furi_assert(desktop);
 
-    // clock type upd after 1 minute
-    desktop->clock_type = (locale_get_time_format() == LocaleTimeFormat24h);
+    FuriHalRtcDateTime curr_dt;
+    furi_hal_rtc_get_datetime(&curr_dt);
+
+    if(forced) {
+        desktop->clock_type = (locale_get_time_format() == LocaleTimeFormat24h);
+    }
+
+    if(forced || (desktop->minute != curr_dt.minute)) {
+        if(desktop->clock_type) {
+            desktop->hour = curr_dt.hour;
+        } else {
+            desktop->hour = (curr_dt.hour > 12) ? curr_dt.hour - 12 :
+                                                  ((curr_dt.hour == 0) ? 12 : curr_dt.hour);
+        }
+        desktop->minute = curr_dt.minute;
+        view_port_update(desktop->clock_viewport);
+    }
+}
+
+static void desktop_clock_toggle_view(Desktop* desktop, bool is_enabled) {
+    furi_assert(desktop);
+
+    desktop_clock_upd_time(desktop, true);
 
     if(is_enabled) { // && !furi_timer_is_running(desktop->update_clock_timer)) {
         furi_timer_start(desktop->update_clock_timer, furi_ms_to_ticks(1000));
@@ -131,12 +153,7 @@ static bool desktop_custom_event_callback(void* context, uint32_t event) {
         return true;
     case DesktopGlobalAfterAppFinished:
         animation_manager_load_and_continue_animation(desktop->animation_manager);
-        // TODO: Implement a message mechanism for loading settings and (optionally)
-        // locking and unlocking
-        DESKTOP_SETTINGS_LOAD(&desktop->settings);
-
-        desktop_toggle_clock_view(desktop, desktop->settings.display_clock);
-
+        desktop_clock_toggle_view(desktop, XTREME_SETTINGS()->statusbar_clock);
         desktop_auto_lock_arm(desktop);
         return true;
     case DesktopGlobalAutoLock:
@@ -202,24 +219,12 @@ static void desktop_auto_lock_inhibit(Desktop* desktop) {
     }
 }
 
-static void desktop_update_clock_timer_callback(void* context) {
+static void desktop_clock_timer_callback(void* context) {
     furi_assert(context);
     Desktop* desktop = context;
 
     if(gui_get_count_of_enabled_view_port_in_layer(desktop->gui, GuiLayerStatusBarLeft) < 6) {
-        FuriHalRtcDateTime curr_dt;
-        furi_hal_rtc_get_datetime(&curr_dt);
-
-        if(desktop->minute != curr_dt.minute) {
-            if(desktop->clock_type) {
-                desktop->hour = curr_dt.hour;
-            } else {
-                desktop->hour = (curr_dt.hour > 12) ? curr_dt.hour - 12 :
-                                                      ((curr_dt.hour == 0) ? 12 : curr_dt.hour);
-            }
-            desktop->minute = curr_dt.minute;
-            view_port_update(desktop->clock_viewport);
-        }
+        desktop_clock_upd_time(desktop, false);
 
         view_port_enabled_set(desktop->clock_viewport, true);
     } else {
@@ -228,7 +233,7 @@ static void desktop_update_clock_timer_callback(void* context) {
 }
 
 void desktop_lock(Desktop* desktop, bool pin_lock) {
-    pin_lock = pin_lock && desktop->settings.pin_code.length > 0;
+    pin_lock = pin_lock && desktop_pin_is_valid(&desktop->settings.pin_code);
     if(!furi_hal_rtc_is_flag_set(FuriHalRtcFlagLock)) {
         furi_hal_rtc_set_pin_fails(0);
     }
@@ -403,18 +408,12 @@ Desktop* desktop_alloc() {
     desktop->status_pubsub = furi_pubsub_alloc();
 
     desktop->update_clock_timer =
-        furi_timer_alloc(desktop_update_clock_timer_callback, FuriTimerTypePeriodic, desktop);
+        furi_timer_alloc(desktop_clock_timer_callback, FuriTimerTypePeriodic, desktop);
 
     FuriHalRtcDateTime curr_dt;
     furi_hal_rtc_get_datetime(&curr_dt);
 
-    if(desktop->clock_type) {
-        desktop->hour = curr_dt.hour;
-    } else {
-        desktop->hour = (curr_dt.hour > 12) ? curr_dt.hour - 12 :
-                                              ((curr_dt.hour == 0) ? 12 : curr_dt.hour);
-    }
-    desktop->minute = curr_dt.minute;
+    desktop_clock_upd_time(desktop, true);
 
     furi_record_create(RECORD_DESKTOP, desktop);
 
@@ -436,12 +435,53 @@ bool desktop_api_is_locked(Desktop* instance) {
 
 void desktop_api_unlock(Desktop* instance) {
     furi_assert(instance);
-    view_dispatcher_send_custom_event(instance->view_dispatcher, DesktopLockedEventUnlocked);
+    if(!furi_hal_rtc_is_flag_set(FuriHalRtcFlagLock) || XTREME_SETTINGS()->pin_unlock_from_app) {
+        view_dispatcher_send_custom_event(instance->view_dispatcher, DesktopLockedEventUnlocked);
+    }
 }
 
 FuriPubSub* desktop_api_get_status_pubsub(Desktop* instance) {
     furi_assert(instance);
     return instance->status_pubsub;
+}
+
+static const KeybindType keybind_types[] = {
+    [InputTypeShort] = KeybindTypePress,
+    [InputTypeLong] = KeybindTypeHold,
+};
+
+static const KeybindKey keybind_keys[] = {
+    [InputKeyUp] = KeybindKeyUp,
+    [InputKeyDown] = KeybindKeyDown,
+    [InputKeyRight] = KeybindKeyRight,
+    [InputKeyLeft] = KeybindKeyLeft,
+};
+
+void desktop_run_keybind(Desktop* instance, InputType _type, InputKey _key) {
+    if(_type != InputTypeShort && _type != InputTypeLong) return;
+    if(_key != InputKeyUp && _key != InputKeyDown && _key != InputKeyRight && _key != InputKeyLeft)
+        return;
+
+    KeybindType type = keybind_types[_type];
+    KeybindKey key = keybind_keys[_key];
+    const char* keybind = instance->keybinds[type][key].data;
+    if(!strnlen(keybind, MAX_KEYBIND_LENGTH)) return;
+
+    if(!strncmp(keybind, "Apps Menu", MAX_KEYBIND_LENGTH)) {
+        loader_start_detached_with_gui_error(instance->loader, LOADER_APPLICATIONS_NAME, NULL);
+    } else if(!strncmp(keybind, "Archive", MAX_KEYBIND_LENGTH)) {
+        view_dispatcher_send_custom_event(instance->view_dispatcher, DesktopMainEventOpenArchive);
+    } else if(!strncmp(keybind, "Device Info", MAX_KEYBIND_LENGTH)) {
+        loader_start_detached_with_gui_error(instance->loader, "Power", "about_battery");
+    } else if(!strncmp(keybind, "Lock Menu", MAX_KEYBIND_LENGTH)) {
+        view_dispatcher_send_custom_event(instance->view_dispatcher, DesktopMainEventOpenLockMenu);
+    } else if(!strncmp(keybind, "Lock Keypad", MAX_KEYBIND_LENGTH)) {
+        view_dispatcher_send_custom_event(instance->view_dispatcher, DesktopMainEventLockKeypad);
+    } else if(!strncmp(keybind, "Lock with PIN", MAX_KEYBIND_LENGTH)) {
+        view_dispatcher_send_custom_event(instance->view_dispatcher, DesktopMainEventLockWithPin);
+    } else {
+        loader_start_detached_with_gui_error(instance->loader, keybind, NULL);
+    }
 }
 
 int32_t desktop_srv(void* p) {
@@ -454,13 +494,29 @@ int32_t desktop_srv(void* p) {
 
     Desktop* desktop = desktop_alloc();
 
-    bool loaded = DESKTOP_SETTINGS_LOAD(&desktop->settings);
-    if(!loaded) {
+    bool ok = DESKTOP_SETTINGS_LOAD(&desktop->settings);
+    if(ok && desktop->settings.pin_code.length) {
+        ok = desktop_pin_is_valid(&desktop->settings.pin_code);
+    }
+    if(!ok) {
         memset(&desktop->settings, 0, sizeof(desktop->settings));
-        DESKTOP_SETTINGS_SAVE(&desktop->settings);
+        furi_hal_rtc_reset_flag(FuriHalRtcFlagLock);
+        furi_hal_rtc_set_pin_fails(0);
     }
 
-    desktop_toggle_clock_view(desktop, desktop->settings.display_clock);
+    if(!DESKTOP_KEYBINDS_LOAD(&desktop->keybinds, sizeof(desktop->keybinds))) {
+        memset(&desktop->keybinds, 0, sizeof(desktop->keybinds));
+        strcpy(desktop->keybinds[KeybindTypePress][KeybindKeyUp].data, "Lock Menu");
+        strcpy(desktop->keybinds[KeybindTypePress][KeybindKeyDown].data, "Archive");
+        strcpy(desktop->keybinds[KeybindTypePress][KeybindKeyRight].data, "Passport");
+        strcpy(
+            desktop->keybinds[KeybindTypePress][KeybindKeyLeft].data,
+            EXT_PATH("apps/Misc/nightstand.fap"));
+        strcpy(desktop->keybinds[KeybindTypeHold][KeybindKeyRight].data, "Device Info");
+        strcpy(desktop->keybinds[KeybindTypeHold][KeybindKeyLeft].data, "Lock with PIN");
+    }
+
+    desktop_clock_toggle_view(desktop, XTREME_SETTINGS()->statusbar_clock);
 
     scene_manager_next_scene(desktop->scene_manager, DesktopSceneMain);
 

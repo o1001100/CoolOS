@@ -5,7 +5,7 @@
 #include "scenes/subrem_scene.h"
 
 #include "helpers/txrx/subghz_txrx.h"
-#include <subrem_configurator_icons.h>
+#include <assets_icons.h>
 
 #include "views/remote.h"
 #include "views/edit_menu.h"
@@ -22,10 +22,6 @@
 #include <storage/storage.h>
 
 #include <flipper_format/flipper_format_i.h>
-
-#include <lib/subghz/subghz_setting.h>
-#include <lib/subghz/receiver.h>
-#include <lib/subghz/transmitter.h>
 
 #define SUBREM_APP_FOLDER EXT_PATH("subghz/remote")
 #define SUBREM_MAX_LEN_NAME 64
