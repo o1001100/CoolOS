@@ -1,5 +1,5 @@
 #!/usb/bin/env python3
-VERSION = "5.0"
+VERSION = "6.0"
 
 import json
 import os
