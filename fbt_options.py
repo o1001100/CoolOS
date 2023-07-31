@@ -1,6 +1,6 @@
 from pathlib import Path
+import subprocess
 import posixpath
-import datetime
 
 # For more details on these options, run 'fbt -h'
 
@@ -76,22 +76,6 @@ FIRMWARE_APPS = {
         "basic_services",
         "updater_app",
         "unit_tests",
-    ],
-    "debug_pack": [
-        # Svc
-        "basic_services",
-        # Apps
-        "main_apps",
-        "system_apps",
-        # Settings
-        "settings_apps",
-        # Plugins
-        # "basic_plugins",
-        # Debug
-        # "debug_apps",
-        # "updater_app",
-        # "unit_tests",
-        # "nfc",
     ],
 }
 

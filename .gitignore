@@ -78,14 +78,12 @@ commitnotes.md
 fbt_options.py
 
 # Asset packs
-assets/dolphin/custom/*
-!assets/dolphin/custom/WatchDogs/
-!assets/dolphin/custom/ReadMe.md
-assets/resources/dolphin_custom/
-
-
-# CoolOS specific:
+assets/asset_packs/*
+!assets/asset_packs/WatchDogs/
+!assets/asset_packs/ReadMe.md
+assets/resources/asset_packs/
 
 # shite
 applications_user/*
 release/*
+
