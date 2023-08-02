@@ -46,3 +46,6 @@
 [submodule "applications/external/hex_editor"]
 	path = applications/external/hex_editor
 	url = https://github.com/dunaevai135/flipper-zero-hex_editor
+[submodule "applications/external/tpms"]
+	path = applications/external/tpms
+	url = https://github.com/wosk/flipperzero-tpms
