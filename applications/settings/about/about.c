@@ -151,7 +151,7 @@ static DialogMessageButton fw_version_screen(DialogsApp* dialogs, DialogMessage*
             c2_ver ? c2_ver->StackTypeString : "<none>");
     }
 
-    dialog_message_set_header(message, "Firmwawe Info:\nCoolOS version 6.0", 0, 0, AlignLeft, AlignTop);
+    dialog_message_set_header(message, "Firmwawe Info:\nCoolOS version 7.0a", 0, 0, AlignLeft, AlignTop);
     dialog_message_set_text(
         message,
         "\ngithub.com/o1001100/coolos\nIt's cool as fuck!",

@@ -7,7 +7,7 @@ source version.cfg
 version () {
   # set version
   sed -i 's/DIST_SUFFIX = f".*"/DIST_SUFFIX = f"CoolOS-v'"$version"'"/g' fbt_options.py
-  sed -i 's/VERSION = ".*"/VERSION = "'"$version"'"/g' scripts/version.py
+  #sed -i 's/VERSION = ".*"/VERSION = "'"$version"'"/g' scripts/version.py
   if grep -q 'CoolOS version .*' applications/settings/about/about.c; then
     sed -i 's/CoolOS version .*"/CoolOS version '"$version"'"/g' applications/settings/about/about.c
   else

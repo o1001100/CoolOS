@@ -19,7 +19,7 @@ DEBUG = 0
 # If OS environment has DIST_SUFFIX set, it will be used instead
 
 # How about we add the timestamp automatically. Solves some problems
-DIST_SUFFIX = f"CoolOS-v6.0"
+DIST_SUFFIX = f"CoolOS-v7.0a"
 
 # Coprocessor firmware
 COPRO_OB_DATA = "scripts/ob.data"
