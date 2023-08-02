@@ -39,14 +39,14 @@ clean () {
 apps () {
   printf "\n### Building Apps ###\n"
   sleep 1
-  ./fbt fap_dist
+  ./fbt fap_dist FORCE_NO_DIRTY=1
   rsync -r dist/f7-C/apps/ applications_user
 }
 
 firmware () {
   printf "\n### Building Firmware Package ###\n"
   sleep 1
-  ./fbt updater_package
+  ./fbt updater_package FORCE_NO_DIRTY=1
 }
 
 help () {
