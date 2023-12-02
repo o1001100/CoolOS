@@ -5,6 +5,7 @@ enum VarItemListIndex {
     VarItemListIndexDolphin,
     VarItemListIndexChangeDeviceName,
     VarItemListIndexChargeCap,
+    VarItemListIndexShowXtremeIntro,
 };
 
 void xtreme_app_scene_misc_var_item_list_callback(void* context, uint32_t index) {
@@ -19,13 +20,12 @@ static void xtreme_app_scene_misc_charge_cap_changed(VariableItem* item) {
     uint32_t value = (variable_item_get_current_value_index(item) + 1) * CHARGE_CAP_INTV;
     snprintf(cap_str, 6, "%lu%%", value);
     variable_item_set_current_value_text(item, cap_str);
-    XTREME_SETTINGS()->charge_cap = value;
+    xtreme_settings.charge_cap = value;
     app->save_settings = true;
 }
 
 void xtreme_app_scene_misc_on_enter(void* context) {
     XtremeApp* app = context;
-    XtremeSettings* xtreme_settings = XTREME_SETTINGS();
     VariableItemList* var_item_list = app->var_item_list;
     VariableItem* item;
     uint8_t value_index;
@@ -39,7 +39,7 @@ void xtreme_app_scene_misc_on_enter(void* context) {
     variable_item_list_add(var_item_list, "Change Device Name", 0, NULL, app);
 
     char cap_str[6];
-    value_index = xtreme_settings->charge_cap / CHARGE_CAP_INTV;
+    value_index = xtreme_settings.charge_cap / CHARGE_CAP_INTV;
     snprintf(cap_str, 6, "%lu%%", (uint32_t)value_index * CHARGE_CAP_INTV);
     item = variable_item_list_add(
         var_item_list,
@@ -49,6 +49,8 @@ void xtreme_app_scene_misc_on_enter(void* context) {
         app);
     variable_item_set_current_value_index(item, value_index - 1);
     variable_item_set_current_value_text(item, cap_str);
+
+    variable_item_list_add(var_item_list, "Show Xtreme Intro", 0, NULL, app);
 
     variable_item_list_set_enter_callback(
         var_item_list, xtreme_app_scene_misc_var_item_list_callback, app);
@@ -68,14 +70,30 @@ bool xtreme_app_scene_misc_on_event(void* context, SceneManagerEvent event) {
         consumed = true;
         switch(event.event) {
         case VarItemListIndexScreen:
+            scene_manager_set_scene_state(app->scene_manager, XtremeAppSceneMiscScreen, 0);
             scene_manager_next_scene(app->scene_manager, XtremeAppSceneMiscScreen);
             break;
         case VarItemListIndexDolphin:
+            scene_manager_set_scene_state(app->scene_manager, XtremeAppSceneMiscDolphin, 0);
             scene_manager_next_scene(app->scene_manager, XtremeAppSceneMiscDolphin);
             break;
         case VarItemListIndexChangeDeviceName:
+            scene_manager_set_scene_state(app->scene_manager, XtremeAppSceneMiscRename, 0);
             scene_manager_next_scene(app->scene_manager, XtremeAppSceneMiscRename);
             break;
+        case VarItemListIndexShowXtremeIntro: {
+            for(int i = 0; i < 10; i++) {
+                if(storage_common_copy(
+                       furi_record_open(RECORD_STORAGE),
+                       EXT_PATH("dolphin/xfwfirstboot.bin"),
+                       EXT_PATH(".slideshow"))) {
+                    app->show_slideshow = true;
+                    xtreme_app_apply(app);
+                    break;
+                }
+            }
+            break;
+        }
         default:
             break;
         }

@@ -4,7 +4,6 @@
 
 #include <furi.h>
 #include <furi_hal.h>
-#include <furi_hal_rtc.h>
 #include <stdint.h>
 #include <u8g2_glue.h>
 #include <xtreme.h>
@@ -15,6 +14,10 @@ const CanvasFontParameters canvas_font_params[FontTotalNumber] = {
     [FontKeyboard] = {.leading_default = 11, .leading_min = 9, .height = 7, .descender = 2},
     [FontBigNumbers] = {.leading_default = 18, .leading_min = 16, .height = 15, .descender = 0},
     [FontBatteryPercent] = {.leading_default = 11, .leading_min = 9, .height = 6, .descender = 0},
+    [FontScummRomanOutline] =
+        {.leading_default = 12, .leading_min = 11, .height = 12, .descender = 2},
+    [FontScummRoman] = {.leading_default = 12, .leading_min = 11, .height = 10, .descender = 2},
+    [FontEurocorp] = {.leading_default = 12, .leading_min = 11, .height = 16, .descender = 2},
 };
 
 Canvas* canvas_init() {
@@ -114,7 +117,7 @@ const CanvasFontParameters* canvas_get_font_params(const Canvas* canvas, Font fo
 
 void canvas_clear(Canvas* canvas) {
     furi_assert(canvas);
-    if(XTREME_SETTINGS()->dark_mode) {
+    if(xtreme_settings.dark_mode) {
         u8g2_FillBuffer(&canvas->fb);
     } else {
         u8g2_ClearBuffer(&canvas->fb);
@@ -123,7 +126,7 @@ void canvas_clear(Canvas* canvas) {
 
 void canvas_set_color(Canvas* canvas, Color color) {
     furi_assert(canvas);
-    if(XTREME_SETTINGS()->dark_mode) {
+    if(xtreme_settings.dark_mode) {
         if(color == ColorBlack) {
             color = ColorWhite;
         } else if(color == ColorWhite) {
@@ -161,8 +164,17 @@ void canvas_set_font(Canvas* canvas, Font font) {
     case FontBatteryPercent:
         u8g2_SetFont(&canvas->fb, u8g2_font_5x7_tf); //u8g2_font_micro_tr);
         break;
+    case FontScummRomanOutline:
+        u8g2_SetFont(&canvas->fb, u8g2_font_lucasarts_scumm_subtitle_o_tr);
+        break;
+    case FontScummRoman:
+        u8g2_SetFont(&canvas->fb, u8g2_font_lucasarts_scumm_subtitle_r_tr);
+        break;
+    case FontEurocorp:
+        u8g2_SetFont(&canvas->fb, u8g2_font_eurocorp_tr);
+        break;
     default:
-        furi_crash(NULL);
+        furi_crash();
         break;
     }
 }
@@ -203,7 +215,7 @@ void canvas_draw_str_aligned(
         x -= (u8g2_GetStrWidth(&canvas->fb, str) / 2);
         break;
     default:
-        furi_crash(NULL);
+        furi_crash();
         break;
     }
 
@@ -217,7 +229,7 @@ void canvas_draw_str_aligned(
         y += (u8g2_GetAscent(&canvas->fb) / 2);
         break;
     default:
-        furi_crash(NULL);
+        furi_crash();
         break;
     }
 
@@ -575,7 +587,7 @@ void canvas_set_orientation(Canvas* canvas, CanvasOrientation orientation) {
             rotate_cb = U8G2_R1;
             break;
         default:
-            furi_assert(0);
+            furi_crash();
         }
 
         if(need_swap) FURI_SWAP(canvas->width, canvas->height);

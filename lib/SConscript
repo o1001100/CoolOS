@@ -5,15 +5,16 @@ env.Append(
         Dir("app-scened-template"),
         Dir("digital_signal"),
         Dir("pulse_reader"),
+        Dir("signal_reader"),
         Dir("drivers"),
         Dir("flipper_format"),
         Dir("infrared"),
         Dir("nfc"),
-        Dir("ST25RFAL002"),
         Dir("subghz"),
         Dir("toolbox"),
         Dir("u8g2"),
         Dir("update_util"),
+        Dir("xtreme"),
         Dir("print"),
         Dir("music_worker"),
     ],
@@ -23,7 +24,7 @@ env.Append(
 env.Append(
     CPPPATH=[
         "#/",
-        "#/lib",  # TODO: remove!
+        "#/lib",  # TODO FL-3553: remove!
         "#/lib/mlib",
         # Ugly hack
         Dir("../assets/compiled"),
@@ -86,7 +87,6 @@ libs = env.BuildModules(
         "print",
         "microtar",
         "toolbox",
-        "ST25RFAL002",
         "libusb_stm32",
         "drivers",
         "fatfs",
@@ -100,6 +100,7 @@ libs = env.BuildModules(
         "nfc",
         "digital_signal",
         "pulse_reader",
+        "signal_reader",
         "appframe",
         "misc",
         "lfrfid",

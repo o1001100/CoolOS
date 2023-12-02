@@ -41,17 +41,13 @@ class GitVersion:
             or "unknown"
         )
 
-        force_no_dirty = os.environ.get("FORCE_NO_DIRTY", None) or ""
-        if force_no_dirty != "":
-            dirty = False
-
         if "SOURCE_DATE_EPOCH" in os.environ:
             commit_date = datetime.utcfromtimestamp(
                 int(os.environ["SOURCE_DATE_EPOCH"])
             )
         else:
             commit_date = datetime.strptime(
-                self._exec_git("log -1 --format=%cd").strip(),
+                self._exec_git("log -1 --format=%cd --date=default").strip(),
                 "%a %b %d %H:%M:%S %Y %z",
             )
 
@@ -101,7 +97,7 @@ class Main(App):
             required=True,
         )
         self.parser_generate.add_argument(
-            "-fw-origin",
+            "--fw-origin",
             dest="firmware_origin",
             type=str,
             help="firmware origin",

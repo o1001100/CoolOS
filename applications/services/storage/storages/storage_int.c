@@ -455,6 +455,14 @@ static uint64_t storage_int_file_tell(void* ctx, File* file) {
     return position;
 }
 
+static bool storage_int_file_expand(void* ctx, File* file, const uint64_t size) {
+    UNUSED(ctx);
+    UNUSED(file);
+    UNUSED(size);
+    file->error_id = FSE_NOT_IMPLEMENTED;
+    return (file->error_id == FSE_OK);
+}
+
 static bool storage_int_file_truncate(void* ctx, File* file) {
     StorageData* storage = ctx;
     lfs_t* lfs = lfs_get_from_storage(storage);
@@ -693,6 +701,10 @@ static FS_Error storage_int_common_fs_info(
     return storage_int_parse_error(result);
 }
 
+static bool storage_int_common_equivalent_path(const char* path1, const char* path2) {
+    return strcmp(path1, path2) == 0;
+}
+
 /******************* Init Storage *******************/
 static const FS_Api fs_api = {
     .file =
@@ -703,6 +715,7 @@ static const FS_Api fs_api = {
             .write = storage_int_file_write,
             .seek = storage_int_file_seek,
             .tell = storage_int_file_tell,
+            .expand = storage_int_file_expand,
             .truncate = storage_int_file_truncate,
             .size = storage_int_file_size,
             .sync = storage_int_file_sync,
@@ -722,6 +735,7 @@ static const FS_Api fs_api = {
             .remove = storage_int_common_remove,
             .rename = storage_int_common_rename,
             .fs_info = storage_int_common_fs_info,
+            .equivalent_path = storage_int_common_equivalent_path,
         },
 };
 

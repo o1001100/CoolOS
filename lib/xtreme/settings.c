@@ -1,5 +1,6 @@
 #include "xtreme.h"
 #include <furi_hal.h>
+#include <rgb_backlight.h>
 #include <flipper_format/flipper_format.h>
 
 #define TAG "XtremeSettings"
@@ -9,16 +10,18 @@ XtremeSettings xtreme_settings = {
     .anim_speed = 100, // 100%
     .cycle_anims = 0, // Meta.txt
     .unlock_anims = false, // OFF
-    .fallback_anim = true, // ON
+    .credits_anim = true, // ON
     .menu_style = MenuStyleWii, // Wii
     .lock_on_boot = false, // OFF
     .bad_pins_format = false, // OFF
     .allow_locked_rpc_commands = false, // OFF
+    .lockscreen_poweroff = true, // ON
     .lockscreen_time = true, // ON
     .lockscreen_seconds = false, // OFF
     .lockscreen_date = true, // ON
     .lockscreen_statusbar = true, // ON
     .lockscreen_prompt = true, // ON
+    .lockscreen_transparent = false, // OFF
     .battery_icon = BatteryIconBarPercent, // Bar %
     .statusbar_clock = false, // OFF
     .status_icons = true, // ON
@@ -34,6 +37,11 @@ XtremeSettings xtreme_settings = {
     .rgb_backlight = false, // OFF
     .butthurt_timer = 21600, // 6 H
     .charge_cap = 100, // 100%
+    .spi_cc1101_handle = SpiDefault, // &furi_hal_spi_bus_handle_external
+    .spi_nrf24_handle = SpiDefault, // &furi_hal_spi_bus_handle_external
+    .uart_esp_channel = UARTDefault, // pin 13,14
+    .uart_nmea_channel = UARTDefault, // pin 13,14
+    .uart_general_channel = UARTDefault, // pin 13,14
 };
 
 void XTREME_SETTINGS_LOAD() {
@@ -62,8 +70,8 @@ void XTREME_SETTINGS_LOAD() {
             x->unlock_anims = b;
         }
         flipper_format_rewind(file);
-        if(flipper_format_read_bool(file, "fallback_anim", &b, 1)) {
-            x->fallback_anim = b;
+        if(flipper_format_read_bool(file, "credits_anim", &b, 1)) {
+            x->credits_anim = b;
         }
         flipper_format_rewind(file);
         if(flipper_format_read_uint32(file, "menu_style", &u, 1)) {
@@ -80,6 +88,10 @@ void XTREME_SETTINGS_LOAD() {
         flipper_format_rewind(file);
         if(flipper_format_read_bool(file, "lock_on_boot", &b, 1)) {
             x->lock_on_boot = b;
+        }
+        flipper_format_rewind(file);
+        if(flipper_format_read_bool(file, "lockscreen_poweroff", &b, 1)) {
+            x->lockscreen_poweroff = b;
         }
         flipper_format_rewind(file);
         if(flipper_format_read_bool(file, "lockscreen_time", &b, 1)) {
@@ -100,6 +112,10 @@ void XTREME_SETTINGS_LOAD() {
         flipper_format_rewind(file);
         if(flipper_format_read_bool(file, "lockscreen_prompt", &b, 1)) {
             x->lockscreen_prompt = b;
+        }
+        flipper_format_rewind(file);
+        if(flipper_format_read_bool(file, "lockscreen_transparent", &b, 1)) {
+            x->lockscreen_transparent = b;
         }
         flipper_format_rewind(file);
         if(flipper_format_read_uint32(file, "battery_icon", &u, 1)) {
@@ -161,9 +177,31 @@ void XTREME_SETTINGS_LOAD() {
         if(flipper_format_read_uint32(file, "charge_cap", &u, 1)) {
             x->charge_cap = CLAMP(u, 100U, 5U);
         }
+        flipper_format_rewind(file);
+        if(flipper_format_read_uint32(file, "spi_cc1101_handle", &u, 1)) {
+            x->spi_cc1101_handle = CLAMP(u, SpiCount - 1U, 0U);
+        }
+        flipper_format_rewind(file);
+        if(flipper_format_read_uint32(file, "spi_nrf24_handle", &u, 1)) {
+            x->spi_nrf24_handle = CLAMP(u, SpiCount - 1U, 0U);
+        }
+        flipper_format_rewind(file);
+        if(flipper_format_read_uint32(file, "uart_esp_channel", &u, 1)) {
+            x->uart_esp_channel = CLAMP(u, UARTCount - 1U, 0U);
+        }
+        flipper_format_rewind(file);
+        if(flipper_format_read_uint32(file, "uart_nmea_channel", &u, 1)) {
+            x->uart_nmea_channel = CLAMP(u, UARTCount - 1U, 0U);
+        }
+        flipper_format_rewind(file);
+        if(flipper_format_read_uint32(file, "uart_general_channel", &u, 1)) {
+            x->uart_general_channel = CLAMP(u, UARTCount - 1U, 0U);
+        }
     }
     flipper_format_free(file);
     furi_record_close(RECORD_STORAGE);
+
+    rgb_backlight_load_settings(x->rgb_backlight);
 }
 
 void XTREME_SETTINGS_SAVE() {
@@ -176,17 +214,20 @@ void XTREME_SETTINGS_SAVE() {
         flipper_format_write_uint32(file, "anim_speed", &x->anim_speed, 1);
         flipper_format_write_int32(file, "cycle_anims", &x->cycle_anims, 1);
         flipper_format_write_bool(file, "unlock_anims", &x->unlock_anims, 1);
-        flipper_format_write_bool(file, "fallback_anim", &x->fallback_anim, 1);
+        flipper_format_write_bool(file, "credits_anim", &x->credits_anim, 1);
         e = x->menu_style;
         flipper_format_write_uint32(file, "menu_style", &e, 1);
         flipper_format_write_bool(file, "bad_pins_format", &x->bad_pins_format, 1);
-        flipper_format_write_bool(file, "allow_locked_rpc_commands", &x->allow_locked_rpc_commands, 1);
+        flipper_format_write_bool(
+            file, "allow_locked_rpc_commands", &x->allow_locked_rpc_commands, 1);
         flipper_format_write_bool(file, "lock_on_boot", &x->lock_on_boot, 1);
+        flipper_format_write_bool(file, "lockscreen_poweroff", &x->lockscreen_poweroff, 1);
         flipper_format_write_bool(file, "lockscreen_time", &x->lockscreen_time, 1);
         flipper_format_write_bool(file, "lockscreen_seconds", &x->lockscreen_seconds, 1);
         flipper_format_write_bool(file, "lockscreen_date", &x->lockscreen_date, 1);
         flipper_format_write_bool(file, "lockscreen_statusbar", &x->lockscreen_statusbar, 1);
         flipper_format_write_bool(file, "lockscreen_prompt", &x->lockscreen_prompt, 1);
+        flipper_format_write_bool(file, "lockscreen_transparent", &x->lockscreen_transparent, 1);
         e = x->battery_icon;
         flipper_format_write_uint32(file, "battery_icon", &e, 1);
         flipper_format_write_bool(file, "statusbar_clock", &x->statusbar_clock, 1);
@@ -203,11 +244,17 @@ void XTREME_SETTINGS_SAVE() {
         flipper_format_write_bool(file, "rgb_backlight", &x->rgb_backlight, 1);
         flipper_format_write_uint32(file, "butthurt_timer", &x->butthurt_timer, 1);
         flipper_format_write_uint32(file, "charge_cap", &x->charge_cap, 1);
+        e = x->spi_cc1101_handle;
+        flipper_format_write_uint32(file, "spi_cc1101_handle", &e, 1);
+        e = x->spi_nrf24_handle;
+        flipper_format_write_uint32(file, "spi_nrf24_handle", &e, 1);
+        e = x->uart_esp_channel;
+        flipper_format_write_uint32(file, "uart_esp_channel", &e, 1);
+        e = x->uart_nmea_channel;
+        flipper_format_write_uint32(file, "uart_nmea_channel", &e, 1);
+        e = x->uart_general_channel;
+        flipper_format_write_uint32(file, "uart_general_channel", &e, 1);
     }
     flipper_format_free(file);
     furi_record_close(RECORD_STORAGE);
-}
-
-XtremeSettings* XTREME_SETTINGS() {
-    return &xtreme_settings;
 }

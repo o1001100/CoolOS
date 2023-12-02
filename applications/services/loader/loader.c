@@ -1,4 +1,5 @@
 #include "loader.h"
+#include "core/core_defines.h"
 #include "loader_i.h"
 #include <applications.h>
 #include <storage/storage.h>
@@ -47,7 +48,7 @@ LoaderStatus
 }
 
 static void loader_show_gui_error(LoaderStatus status, FuriString* error_message) {
-    // TODO: we have many places where we can emit a double start, ex: desktop, menu
+    // TODO FL-3522: we have many places where we can emit a double start, ex: desktop, menu
     // so i prefer to not show LoaderStatusErrorAppStarted error message for now
     if(status == LoaderStatusErrorUnknownApp || status == LoaderStatusErrorInternal) {
         DialogsApp* dialogs = furi_record_open(RECORD_DIALOGS);
@@ -81,8 +82,8 @@ void loader_start_detached_with_gui_error(Loader* loader, const char* name, cons
     LoaderMessage message;
 
     message.type = LoaderMessageTypeStartByNameDetachedWithGuiError;
-    message.start.name = name;
-    message.start.args = args;
+    message.start.name = name ? strdup(name) : NULL;
+    message.start.args = args ? strdup(args) : NULL;
     furi_message_queue_put(loader->queue, &message, FuriWaitForever);
 }
 
@@ -307,7 +308,7 @@ static FlipperInternalApplication const* loader_find_application_by_name_in_list
     const FlipperInternalApplication* list,
     const uint32_t n_apps) {
     for(size_t i = 0; i < n_apps; i++) {
-        if(strcmp(name, list[i].name) == 0) {
+        if((strcmp(name, list[i].name) == 0) || (strcmp(name, list[i].appid) == 0)) {
             return &list[i];
         }
     }
@@ -315,18 +316,25 @@ static FlipperInternalApplication const* loader_find_application_by_name_in_list
 }
 
 static const FlipperInternalApplication* loader_find_application_by_name(const char* name) {
-    const FlipperInternalApplication* application = NULL;
-    application = loader_find_application_by_name_in_list(name, FLIPPER_APPS, FLIPPER_APPS_COUNT);
-    if(!application) {
-        application = loader_find_application_by_name_in_list(
-            name, FLIPPER_SETTINGS_APPS, FLIPPER_SETTINGS_APPS_COUNT);
-    }
-    if(!application) {
-        application = loader_find_application_by_name_in_list(
-            name, FLIPPER_SYSTEM_APPS, FLIPPER_SYSTEM_APPS_COUNT);
+    const struct {
+        const FlipperInternalApplication* list;
+        const uint32_t count;
+    } lists[] = {
+        {FLIPPER_APPS, FLIPPER_APPS_COUNT},
+        {FLIPPER_SETTINGS_APPS, FLIPPER_SETTINGS_APPS_COUNT},
+        {FLIPPER_SYSTEM_APPS, FLIPPER_SYSTEM_APPS_COUNT},
+        {FLIPPER_DEBUG_APPS, FLIPPER_DEBUG_APPS_COUNT},
+    };
+
+    for(size_t i = 0; i < COUNT_OF(lists); i++) {
+        const FlipperInternalApplication* application =
+            loader_find_application_by_name_in_list(name, lists[i].list, lists[i].count);
+        if(application) {
+            return application;
+        }
     }
 
-    return application;
+    return NULL;
 }
 
 static void loader_start_app_thread(Loader* loader, FlipperInternalApplicationFlag flags) {
@@ -382,9 +390,7 @@ static void loader_log_status_error(
         furi_string_vprintf(error_message, format, args);
         FURI_LOG_E(TAG, "Status [%d]: %s", status, furi_string_get_cstr(error_message));
     } else {
-        FuriString* tmp = furi_string_alloc();
-        FURI_LOG_E(TAG, "Status [%d]: %s", status, furi_string_get_cstr(tmp));
-        furi_string_free(tmp);
+        FURI_LOG_E(TAG, "Status [%d]", status);
     }
 }
 
@@ -425,7 +431,8 @@ static LoaderStatus loader_start_external_app(
         FlipperApplicationPreloadStatus preload_res =
             flipper_application_preload(loader->app.fap, path);
         bool api_mismatch = false;
-        if(preload_res == FlipperApplicationPreloadStatusApiMismatch) {
+        if(preload_res == FlipperApplicationPreloadStatusApiTooOld ||
+           preload_res == FlipperApplicationPreloadStatusApiTooNew) {
             api_mismatch = true;
         } else if(preload_res != FlipperApplicationPreloadStatusSuccess) {
             const char* err_msg = flipper_application_preload_status_to_string(preload_res);
@@ -448,18 +455,21 @@ static LoaderStatus loader_start_external_app(
             const FlipperApplicationManifest* manifest =
                 flipper_application_get_manifest(loader->app.fap);
 
-            char buf[66];
+            bool app_newer = preload_res == FlipperApplicationPreloadStatusApiTooNew;
+            const char* header = app_newer ? "App Too New" : "App Too Old";
+            char text[63];
             snprintf(
-                buf,
-                66,
-                "FAP: %i != FW: %i\nThis app might not work\nContinue anyways?",
+                text,
+                sizeof(text),
+                "APP:%i %c FW:%i\nThis app might not work\nContinue anyways?",
                 manifest->base.api_version.major,
+                app_newer ? '>' : '<',
                 firmware_api_interface->api_version_major);
 
             DialogMessage* message = dialog_message_alloc();
-            dialog_message_set_header(message, "API Mismatch", 64, 0, AlignCenter, AlignTop);
+            dialog_message_set_header(message, header, 64, 0, AlignCenter, AlignTop);
             dialog_message_set_buttons(message, "Cancel", NULL, "Continue");
-            dialog_message_set_text(message, buf, 64, 32, AlignCenter, AlignCenter);
+            dialog_message_set_text(message, text, 64, 32, AlignCenter, AlignCenter);
             DialogMessageButton res =
                 dialog_message_show(furi_record_open(RECORD_DIALOGS), message);
             dialog_message_free(message);
@@ -665,7 +675,9 @@ int32_t loader_srv(void* p) {
         FLIPPER_ON_SYSTEM_START[i]();
     }
 
-    if(FLIPPER_AUTORUN_APP_NAME && strlen(FLIPPER_AUTORUN_APP_NAME)) {
+    if((furi_hal_rtc_get_boot_mode() == FuriHalRtcBootModeNormal) && FLIPPER_AUTORUN_APP_NAME &&
+       strlen(FLIPPER_AUTORUN_APP_NAME)) {
+        FURI_LOG_I(TAG, "Starting autorun app: %s", FLIPPER_AUTORUN_APP_NAME);
         loader_do_start_by_name(loader, FLIPPER_AUTORUN_APP_NAME, NULL, NULL);
     }
 
@@ -683,6 +695,8 @@ int32_t loader_srv(void* p) {
                 LoaderStatus status = loader_do_start_by_name(
                     loader, message.start.name, message.start.args, error_message);
                 loader_show_gui_error(status, error_message);
+                if(message.start.name) free((void*)message.start.name);
+                if(message.start.args) free((void*)message.start.args);
                 furi_string_free(error_message);
                 break;
             }

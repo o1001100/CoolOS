@@ -547,7 +547,7 @@ void archive_switch_tab(ArchiveBrowserView* browser, InputKey key) {
         } else {
             tab = (tab + 1) % ArchiveTabTotal;
         }
-        if(tab == ArchiveTabInternal && !XTREME_SETTINGS()->show_internal_tab) continue;
+        if(tab == ArchiveTabInternal && !xtreme_settings.show_internal_tab) continue;
         break;
     }
 
@@ -579,10 +579,9 @@ void archive_switch_tab(ArchiveBrowserView* browser, InputKey key) {
             bool is_browser = !strcmp(archive_get_tab_ext(tab), "*");
             bool skip_assets = !is_browser;
             // Hide dot files everywhere except Browser if in debug mode
-            bool hide_dot_files = !is_browser ? true :
-                                  tab == ArchiveTabInternal ?
-                                                false :
-                                                !XTREME_SETTINGS()->show_hidden_files;
+            bool hide_dot_files = !is_browser               ? true :
+                                  tab == ArchiveTabInternal ? false :
+                                                              !xtreme_settings.show_hidden_files;
             archive_file_browser_set_path(
                 browser, browser->path, archive_get_tab_ext(tab), skip_assets, hide_dot_files);
             tab_empty = false; // Empty check will be performed later
@@ -676,6 +675,6 @@ void archive_refresh_dir(ArchiveBrowserView* browser) {
     if(current != NULL) {
         path_extract_basename(furi_string_get_cstr(current->path), str);
     }
-    file_browser_worker_folder_refresh(browser->worker, furi_string_get_cstr(str));
+    file_browser_worker_folder_refresh_sel(browser->worker, furi_string_get_cstr(str));
     furi_string_free(str);
 }

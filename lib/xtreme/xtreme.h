@@ -28,8 +28,27 @@ typedef enum {
 typedef enum {
     MenuStyleList,
     MenuStyleWii,
+    MenuStyleDsi,
+    MenuStylePs4,
+    MenuStyleVertical,
+    MenuStyleC64,
+    MenuStyleEurocorp,
+    MenuStyleCompact,
+    MenuStyleTerminal,
     MenuStyleCount,
 } MenuStyle;
+
+typedef enum {
+    SpiDefault, // cs on pa4
+    SpiExtra, // cs on pc3
+    SpiCount,
+} SpiHandle;
+
+typedef enum {
+    UARTDefault, // pin 13,14
+    UARTExtra, // pin 15,16
+    UARTCount,
+} UARTChannel;
 
 typedef struct {
     bool is_nsfw; // TODO: replace with packs text support
@@ -38,16 +57,18 @@ typedef struct {
     uint32_t anim_speed;
     int32_t cycle_anims;
     bool unlock_anims;
-    bool fallback_anim;
+    bool credits_anim;
     MenuStyle menu_style;
     bool lock_on_boot;
     bool bad_pins_format;
     bool allow_locked_rpc_commands;
+    bool lockscreen_poweroff;
     bool lockscreen_time;
     bool lockscreen_seconds;
     bool lockscreen_date;
     bool lockscreen_statusbar;
     bool lockscreen_prompt;
+    bool lockscreen_transparent;
     BatteryIcon battery_icon;
     bool statusbar_clock;
     bool status_icons;
@@ -63,11 +84,16 @@ typedef struct {
     bool rgb_backlight;
     uint32_t butthurt_timer;
     uint32_t charge_cap;
+    SpiHandle spi_cc1101_handle;
+    SpiHandle spi_nrf24_handle;
+    UARTChannel uart_esp_channel;
+    UARTChannel uart_nmea_channel;
+    UARTChannel uart_general_channel;
 } XtremeSettings;
 
 void XTREME_SETTINGS_LOAD();
 void XTREME_SETTINGS_SAVE();
-XtremeSettings* XTREME_SETTINGS();
+extern XtremeSettings xtreme_settings;
 
 void XTREME_ASSETS_LOAD();
 void XTREME_ASSETS_FREE();

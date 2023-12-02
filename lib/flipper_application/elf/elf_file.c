@@ -1,10 +1,11 @@
+#include "storage/storage.h"
 #include <elf.h>
 #include "elf_file.h"
 #include "elf_file_i.h"
 #include "elf_api_interface.h"
 #include "../api_hashtable/api_hashtable.h"
 
-#define TAG "elf"
+#define TAG "Elf"
 
 #define ELF_NAME_BUFFER_LEN 32
 #define SECTION_OFFSET(e, n) ((e)->section_table + (n) * sizeof(Elf32_Shdr))
@@ -57,6 +58,13 @@ static void address_cache_put(AddressCache_t cache, int symEntry, Elf32_Addr sym
 /********************************************** ELF ***********************************************/
 /**************************************************************************************************/
 
+static void elf_file_maybe_release_fd(ELFFile* elf) {
+    if(elf->fd) {
+        storage_file_free(elf->fd);
+        elf->fd = NULL;
+    }
+}
+
 static ELFSection* elf_file_get_section(ELFFile* elf, const char* name) {
     return ELFSectionDict_get(elf->sections, name);
 }
@@ -93,7 +101,7 @@ static bool elf_read_string_from_offset(ELFFile* elf, off_t offset, FuriString* 
         buffer[ELF_NAME_BUFFER_LEN] = 0;
 
         while(true) {
-            uint16_t read = storage_file_read(elf->fd, buffer, ELF_NAME_BUFFER_LEN);
+            size_t read = storage_file_read(elf->fd, buffer, ELF_NAME_BUFFER_LEN);
             furi_string_cat(name, buffer);
             if(strlen(buffer) < ELF_NAME_BUFFER_LEN) {
                 result = true;
@@ -507,7 +515,7 @@ static SectionType elf_preload_section(
 #endif
 
     // ignore .ARM and .rel.ARM sections
-    // TODO: how to do it not by name?
+    // TODO FL-3525: how to do it not by name?
     // .ARM: type 0x70000001, flags SHF_ALLOC | SHF_LINK_ORDER
     // .rel.ARM: type 0x9, flags SHT_REL
     if(str_prefix(name, ".ARM.") || str_prefix(name, ".rel.ARM.") ||
@@ -605,10 +613,31 @@ static Elf32_Addr elf_address_of_by_hash(ELFFile* elf, uint32_t hash) {
     return ELF_INVALID_ADDRESS;
 }
 
+static bool elf_file_find_string_by_hash(ELFFile* elf, uint32_t hash, FuriString* out) {
+    bool result = false;
+
+    FuriString* symbol_name = furi_string_alloc();
+    Elf32_Sym sym;
+    for(size_t i = 0; i < elf->symbol_count; i++) {
+        furi_string_reset(symbol_name);
+        if(elf_read_symbol(elf, i, &sym, symbol_name)) {
+            if(elf_symbolname_hash(furi_string_get_cstr(symbol_name)) == hash) {
+                furi_string_set(out, symbol_name);
+                result = true;
+                break;
+            }
+        }
+    }
+    furi_string_free(symbol_name);
+
+    return result;
+}
+
 static bool elf_relocate_fast(ELFFile* elf, ELFSection* s) {
     UNUSED(elf);
     const uint8_t* start = s->fast_rel->data;
     const uint8_t version = *start;
+    bool no_errors = true;
 
     if(version != FAST_RELOCATION_VERSION) {
         FURI_LOG_E(TAG, "Unsupported fast relocation version %d", version);
@@ -656,16 +685,30 @@ static bool elf_relocate_fast(ELFFile* elf, ELFSection* s) {
         }
 
         if(address == ELF_INVALID_ADDRESS) {
-            FURI_LOG_E(TAG, "Failed to resolve address for hash %lX", hash_or_section_index);
-            return false;
-        }
+            FuriString* symbol_name = furi_string_alloc();
+            if(elf_file_find_string_by_hash(elf, hash_or_section_index, symbol_name)) {
+                FURI_LOG_E(
+                    TAG,
+                    "Failed to resolve address for symbol %s (hash %lX)",
+                    furi_string_get_cstr(symbol_name),
+                    hash_or_section_index);
+            } else {
+                FURI_LOG_E(
+                    TAG,
+                    "Failed to resolve address for hash %lX (string not found)",
+                    hash_or_section_index);
+            }
+            furi_string_free(symbol_name);
 
-        for(uint32_t j = 0; j < offsets_count; j++) {
-            uint32_t offset = *((uint32_t*)start) & 0x00FFFFFF;
-            start += 3;
-            // FURI_LOG_I(TAG, "  Fast relocation offset %ld: %ld", j, offset);
-            Elf32_Addr relAddr = ((Elf32_Addr)s->data) + offset;
-            elf_relocate_symbol(elf, relAddr, type, address);
+            no_errors = false;
+            start += 3 * offsets_count;
+        } else {
+            for(uint32_t j = 0; j < offsets_count; j++) {
+                uint32_t offset = *((uint32_t*)start) & 0x00FFFFFF;
+                start += 3;
+                Elf32_Addr relAddr = ((Elf32_Addr)s->data) + offset;
+                elf_relocate_symbol(elf, relAddr, type, address);
+            }
         }
     }
 
@@ -673,7 +716,7 @@ static bool elf_relocate_fast(ELFFile* elf, ELFSection* s) {
     free(s->fast_rel);
     s->fast_rel = NULL;
 
-    return true;
+    return no_errors;
 }
 
 static bool elf_relocate_section(ELFFile* elf, ELFSection* section) {
@@ -764,7 +807,7 @@ void elf_file_free(ELFFile* elf) {
         free(elf->debug_link_info.debug_link);
     }
 
-    storage_file_free(elf->fd);
+    elf_file_maybe_release_fd(elf);
     free(elf);
 }
 
@@ -792,7 +835,7 @@ bool elf_file_load_section_table(ELFFile* elf) {
     FuriString* name = furi_string_alloc();
 
     FURI_LOG_D(TAG, "Scan ELF indexs...");
-    // TODO: why we start from 1?
+    // TODO FL-3526: why we start from 1?
     for(size_t section_idx = 1; section_idx < elf->sections_count; section_idx++) {
         Elf32_Shdr section_header;
 
@@ -828,7 +871,7 @@ ElfProcessSectionResult elf_process_section(
     Elf32_Shdr section_header;
 
     // find section
-    // TODO: why we start from 1?
+    // TODO FL-3526: why we start from 1?
     for(size_t section_idx = 1; section_idx < elf->sections_count; section_idx++) {
         furi_string_reset(section_name);
         if(!elf_read_section(elf, section_idx, &section_header, section_name)) {
@@ -845,7 +888,7 @@ ElfProcessSectionResult elf_process_section(
         if(process_section(elf->fd, section_header.sh_offset, section_header.sh_size, context)) {
             result = ElfProcessSectionResultSuccess;
         } else {
-            result = ElfProcessSectionResultCannotProcess;
+            result = ElfProcessSectionResultCannotProcess; //-V1048
         }
     }
 
@@ -855,6 +898,7 @@ ElfProcessSectionResult elf_process_section(
 }
 
 ELFFileLoadStatus elf_file_load_sections(ELFFile* elf) {
+    furi_check(elf->fd != NULL);
     ELFFileLoadStatus status = ELFFileLoadStatusSuccess;
     ELFSectionDict_it_t it;
 
@@ -892,9 +936,10 @@ ELFFileLoadStatus elf_file_load_sections(ELFFile* elf) {
             ELFSectionDict_itref_t* itref = ELFSectionDict_ref(it);
             total_size += itref->value.size;
         }
-        FURI_LOG_I(TAG, "Total size of loaded sections: %u", total_size); //-V576
+        FURI_LOG_I(TAG, "Total size of loaded sections: %zu", total_size);
     }
 
+    elf_file_maybe_release_fd(elf);
     return status;
 }
 

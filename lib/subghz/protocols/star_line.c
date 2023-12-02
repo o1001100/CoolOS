@@ -79,11 +79,12 @@ const SubGhzProtocol subghz_protocol_star_line = {
     .name = SUBGHZ_PROTOCOL_STAR_LINE_NAME,
     .type = SubGhzProtocolTypeDynamic,
     .flag = SubGhzProtocolFlag_433 | SubGhzProtocolFlag_AM | SubGhzProtocolFlag_Decodable |
-            SubGhzProtocolFlag_Load | SubGhzProtocolFlag_Save | SubGhzProtocolFlag_Send |
-            SubGhzProtocolFlag_StarLine,
+            SubGhzProtocolFlag_Load | SubGhzProtocolFlag_Save | SubGhzProtocolFlag_Send,
 
     .decoder = &subghz_protocol_star_line_decoder,
     .encoder = &subghz_protocol_star_line_encoder,
+
+    .filter = SubGhzProtocolFilter_StarLine,
 };
 
 /** 
@@ -130,7 +131,7 @@ void subghz_protocol_encoder_star_line_free(void* context) {
 static bool
     subghz_protocol_star_line_gen_data(SubGhzProtocolEncoderStarLine* instance, uint8_t btn) {
     if(instance->generic.cnt < 0xFFFF) {
-        if((instance->generic.cnt + furi_hal_subghz_get_rolling_counter_mult()) >= 0xFFFF) {
+        if((instance->generic.cnt + furi_hal_subghz_get_rolling_counter_mult()) > 0xFFFF) {
             instance->generic.cnt = 0;
         } else {
             instance->generic.cnt += furi_hal_subghz_get_rolling_counter_mult();

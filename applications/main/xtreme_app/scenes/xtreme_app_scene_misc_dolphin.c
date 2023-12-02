@@ -29,22 +29,41 @@ static void xtreme_app_scene_misc_dolphin_dolphin_angry_changed(VariableItem* it
     app->save_angry = true;
 }
 
-const char* const butthurt_timer_names[] =
-    {"OFF", "30 M", "1 H", "2 H", "4 H", "6 H", "8 H", "12 H", "24 H", "48 H"};
-const uint32_t butthurt_timer_values[COUNT_OF(butthurt_timer_names)] =
-    {0, 1800, 3600, 7200, 14400, 21600, 28800, 43200, 86400, 172800};
+const char* const butthurt_timer_names[] = {
+    "OFF",
+    "30 M",
+    "1 H",
+    "2 H",
+    "4 H",
+    "6 H",
+    "8 H",
+    "12 H",
+    "24 H",
+    "48 H",
+};
+const uint32_t butthurt_timer_values[COUNT_OF(butthurt_timer_names)] = {
+    0,
+    1800,
+    3600,
+    7200,
+    14400,
+    21600,
+    28800,
+    43200,
+    86400,
+    172800,
+};
 static void xtreme_app_scene_misc_dolphin_butthurt_timer_changed(VariableItem* item) {
     XtremeApp* app = variable_item_get_context(item);
     uint8_t index = variable_item_get_current_value_index(item);
     variable_item_set_current_value_text(item, butthurt_timer_names[index]);
-    XTREME_SETTINGS()->butthurt_timer = butthurt_timer_values[index];
+    xtreme_settings.butthurt_timer = butthurt_timer_values[index];
     app->save_settings = true;
     app->require_reboot = true;
 }
 
 void xtreme_app_scene_misc_dolphin_on_enter(void* context) {
     XtremeApp* app = context;
-    XtremeSettings* xtreme_settings = XTREME_SETTINGS();
     VariableItemList* var_item_list = app->var_item_list;
     VariableItem* item;
     uint8_t value_index;
@@ -78,7 +97,7 @@ void xtreme_app_scene_misc_dolphin_on_enter(void* context) {
         xtreme_app_scene_misc_dolphin_butthurt_timer_changed,
         app);
     value_index = value_index_uint32(
-        xtreme_settings->butthurt_timer, butthurt_timer_values, COUNT_OF(butthurt_timer_values));
+        xtreme_settings.butthurt_timer, butthurt_timer_values, COUNT_OF(butthurt_timer_values));
     variable_item_set_current_value_index(item, value_index);
     variable_item_set_current_value_text(item, butthurt_timer_names[value_index]);
 

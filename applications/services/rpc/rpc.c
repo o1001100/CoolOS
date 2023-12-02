@@ -6,7 +6,6 @@
 
 #include <storage.pb.h>
 #include <flipper.pb.h>
-#include <portmacro.h>
 
 #include <furi.h>
 #include <furi_hal.h>
@@ -16,6 +15,8 @@
 #include <stdio.h>
 #include <m-dict.h>
 #include <xtreme.h>
+
+#include <bt/bt_service/bt.h>
 
 #define TAG "RpcSrv"
 
@@ -162,7 +163,7 @@ void rpc_session_set_terminated_callback(
  * odd: client sends close request and sends command after.
  */
 size_t
-    rpc_session_feed(RpcSession* session, uint8_t* encoded_bytes, size_t size, TickType_t timeout) {
+    rpc_session_feed(RpcSession* session, uint8_t* encoded_bytes, size_t size, uint32_t timeout) {
     furi_assert(session);
     furi_assert(encoded_bytes);
 
@@ -318,6 +319,15 @@ static int32_t rpc_session_worker(void* context) {
                     session->closed_callback(session->context);
                 }
                 furi_mutex_release(session->callbacks_mutex);
+
+                if(session->owner == RpcOwnerBle) {
+                    // Disconnect BLE session
+                    FURI_LOG_E("RPC", "BLE session closed due to a decode error");
+                    Bt* bt = furi_record_open(RECORD_BT);
+                    bt_set_profile(bt, BtProfileSerial);
+                    furi_record_close(RECORD_BT);
+                    FURI_LOG_E("RPC", "Finished disconnecting the BLE session");
+                }
             }
         }
 
@@ -365,47 +375,44 @@ static void rpc_session_thread_state_callback(FuriThreadState thread_state, void
 }
 
 RpcSession* rpc_session_open(Rpc* rpc, RpcOwner owner) {
-    if(!furi_hal_rtc_is_flag_set(FuriHalRtcFlagLock) ||
-       XTREME_SETTINGS()->allow_locked_rpc_commands) {
-        furi_assert(rpc);
-
-        RpcSession* session = malloc(sizeof(RpcSession));
-        session->callbacks_mutex = furi_mutex_alloc(FuriMutexTypeNormal);
-        session->stream = furi_stream_buffer_alloc(RPC_BUFFER_SIZE, 1);
-        session->rpc = rpc;
-        session->terminate = false;
-        session->decode_error = false;
-        session->owner = owner;
-        RpcHandlerDict_init(session->handlers);
-
-        session->decoded_message = malloc(sizeof(PB_Main));
-        session->decoded_message->cb_content.funcs.decode = rpc_pb_content_callback;
-        session->decoded_message->cb_content.arg = session;
-
-        session->system_contexts = malloc(COUNT_OF(rpc_systems) * sizeof(void*));
-        for(size_t i = 0; i < COUNT_OF(rpc_systems); ++i) {
-            session->system_contexts[i] = rpc_systems[i].alloc(session);
-        }
-
-        RpcHandler rpc_handler = {
-            .message_handler = rpc_close_session_process,
-            .decode_submessage = NULL,
-            .context = session,
-        };
-        rpc_add_handler(session, PB_Main_stop_session_tag, &rpc_handler);
-
-        session->thread =
-            furi_thread_alloc_ex("RpcSessionWorker", 3072, rpc_session_worker, session);
-
-        furi_thread_set_state_context(session->thread, session);
-        furi_thread_set_state_callback(session->thread, rpc_session_thread_state_callback);
-
-        furi_thread_start(session->thread);
-
-        return session;
-    } else {
+    if(furi_hal_rtc_is_flag_set(FuriHalRtcFlagLock) && !xtreme_settings.allow_locked_rpc_commands)
         return NULL;
+
+    furi_assert(rpc);
+
+    RpcSession* session = malloc(sizeof(RpcSession));
+    session->callbacks_mutex = furi_mutex_alloc(FuriMutexTypeNormal);
+    session->stream = furi_stream_buffer_alloc(RPC_BUFFER_SIZE, 1);
+    session->rpc = rpc;
+    session->terminate = false;
+    session->decode_error = false;
+    session->owner = owner;
+    RpcHandlerDict_init(session->handlers);
+
+    session->decoded_message = malloc(sizeof(PB_Main));
+    session->decoded_message->cb_content.funcs.decode = rpc_pb_content_callback;
+    session->decoded_message->cb_content.arg = session;
+
+    session->system_contexts = malloc(COUNT_OF(rpc_systems) * sizeof(void*));
+    for(size_t i = 0; i < COUNT_OF(rpc_systems); ++i) {
+        session->system_contexts[i] = rpc_systems[i].alloc(session);
     }
+
+    RpcHandler rpc_handler = {
+        .message_handler = rpc_close_session_process,
+        .decode_submessage = NULL,
+        .context = session,
+    };
+    rpc_add_handler(session, PB_Main_stop_session_tag, &rpc_handler);
+
+    session->thread = furi_thread_alloc_ex("RpcSessionWorker", 3072, rpc_session_worker, session);
+
+    furi_thread_set_state_context(session->thread, session);
+    furi_thread_set_state_callback(session->thread, rpc_session_thread_state_callback);
+
+    furi_thread_start(session->thread);
+
+    return session;
 }
 
 void rpc_session_close(RpcSession* session) {
@@ -475,12 +482,15 @@ void rpc_send_and_release(RpcSession* session, PB_Main* message) {
 }
 
 void rpc_send_and_release_empty(RpcSession* session, uint32_t command_id, PB_CommandStatus status) {
+    furi_assert(session);
+
     PB_Main message = {
         .command_id = command_id,
         .command_status = status,
         .has_next = false,
         .which_content = PB_Main_empty_tag,
     };
+
     rpc_send_and_release(session, &message);
     pb_release(&PB_Main_msg, &message);
 }

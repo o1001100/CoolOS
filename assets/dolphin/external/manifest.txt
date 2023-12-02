@@ -162,16 +162,23 @@ Min level: 27
 Max level: 30
 Weight: 3
 
-Name: L3_Fireplace_128x64
-Min butthurt: 0 
+Name: L1_Sad_song_128x64
+Min butthurt: 11
 Max butthurt: 14
-Min level: 27
+Min level: 14
 Max level: 30
-Weight: 3
+Weight: 4
 
-Name: L3_FlipperMustache_128x64
+Name: L2_Coding_in_the_shell_128x64
 Min butthurt: 0
 Max butthurt: 14
-Min level: 27
+Min level: 22
 Max level: 30
-Weight: 3
+Weight: 4
+
+Name: Credits_128x64
+Min butthurt: 0
+Max butthurt: 14
+Min level: 6
+Max level: 30
+Weight: 1
