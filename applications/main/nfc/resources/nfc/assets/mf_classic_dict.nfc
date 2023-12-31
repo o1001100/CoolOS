@@ -3,22 +3,6 @@
 #  Use the user_dict file for user keys
 # Last updated 17 December 2023
 ###########################
-# # Fix ASCII: https://pteo.paranoiaworks.mobi/diacriticsremover/
-# # Check dict and remove duplicates:
-# import pathlib
-# file = pathlib.Path("mf_classic_dict.nfc")
-# lines = file.read_text(encoding="ascii").splitlines()
-# for i, line in enumerate(lines):
-#     if line.startswith("#"):
-#         continue
-#     lines[i] = line = line.upper()
-#     if len(line) != 12 or any(char not in "0123456789ABCDEF" for char in line):
-#         print(f"line {i} is not correct: {line}")
-#     for j in reversed(range(i + 1, len(lines))):
-#         if lines[j].upper() == line:
-#             del lines[j]
-# file.write_text("\n".join(lines))
-###########################
 # +-----------------------------------------------------------------------------------------------------+
 # | https://github.com/RfidResearchGroup/proxmark3/blob/master/client/dictionaries/mfc_default_keys.dic |
 # +-----------------------------------------------------------------------------------------------------+
@@ -29,7 +13,7 @@
 FFFFFFFFFFFF
 # Blank key
 000000000000
-# NFC Forum MADkey
+# NFC Forum MADkey❤️
 A0A1A2A3A4A5
 # MAD access key A (reversed)
 A5A4A3A2A1A0
@@ -132,8 +116,6 @@ AC37E76385F5
 # Car wash system
 1EE38419EF39
 26578719DCD9
-#  EuroKEY (KeySECI)
-# 4B657953454349 (?)
 # more Keys from mfc_default_keys.lua
 000000000001
 000000000002

@@ -133,6 +133,18 @@ static void subghz_scene_add_to_history_callback(
         preset.latitude = subghz->gps->latitude;
         preset.longitude = subghz->gps->longitude;
 
+        if(subghz->last_settings->delete_old_signals && subghz_history_full(subghz->history)) {
+            subghz->state_notifications = SubGhzNotificationStateRx;
+            subghz_view_receiver_disable_draw_callback(subghz->subghz_receiver);
+
+            subghz_history_delete_item(subghz->history, 0);
+            subghz_view_receiver_delete_item(subghz->subghz_receiver, 0);
+
+            subghz_view_receiver_enable_draw_callback(subghz->subghz_receiver);
+            subghz_scene_receiver_update_statusbar(subghz);
+            subghz->idx_menu_chosen = subghz_view_receiver_get_idx_menu(subghz->subghz_receiver);
+            idx--;
+        }
         if(subghz_history_add_to_history(history, decoder_base, &preset)) {
             furi_string_reset(item_name);
             furi_string_reset(item_time);
@@ -189,7 +201,7 @@ static void subghz_scene_add_to_history_callback(
         furi_string_free(item_time);
         subghz_rx_key_state_set(subghz, SubGhzRxKeyStateAddKey);
     } else {
-        FURI_LOG_I(TAG, "%s protocol ignored", decoder_base->protocol->name);
+        FURI_LOG_D(TAG, "%s protocol ignored", decoder_base->protocol->name);
     }
 }
 
@@ -286,6 +298,7 @@ void subghz_scene_receiver_on_enter(void* context) {
         subghz_txrx_load_decoder_by_name_protocol(subghz->txrx, SUBGHZ_PROTOCOL_BIN_RAW_NAME));
 
     subghz_scene_receiver_update_statusbar(subghz);
+
     subghz_view_receiver_set_lock(subghz->subghz_receiver, subghz_is_locked(subghz));
 
     view_dispatcher_switch_to_view(subghz->view_dispatcher, SubGhzViewIdReceiver);
