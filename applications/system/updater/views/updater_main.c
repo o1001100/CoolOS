@@ -93,7 +93,7 @@ static void updater_main_draw_callback(Canvas* canvas, void* _model) {
         canvas_draw_icon(canvas, 7, 54, &I_Ok_btn_9x9);
         canvas_draw_icon(canvas, 75, 55, &I_Pin_back_arrow_10x8);
     } else {
-        canvas_draw_str_aligned(canvas, 82, 16, AlignCenter, AlignTop, "Xtreme FW");
+        canvas_draw_str_aligned(canvas, 82, 16, AlignCenter, AlignTop, "CoolOS");
         canvas_set_font(canvas, FontSecondary);
         canvas_draw_str_aligned(canvas, 82, 6, AlignCenter, AlignTop, "Installing");
         canvas_draw_str_aligned(
